@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Vote as VoteIcon, UserCheck, BarChart3, Settings } from "lucide-react";
+import { LayoutDashboard, Users, Vote as VoteIcon, UserCheck, BarChart3, MapPin, Settings, Info } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -7,7 +7,10 @@ const navItems = [
   { path: "/elections", label: "Elections", icon: VoteIcon },
   { path: "/candidates", label: "Candidates", icon: UserCheck },
   { path: "/results", label: "Results", icon: BarChart3 },
-  { path: "/admin", label: "Settings", icon: Settings }
+  { path: "/states", label: "States", icon: MapPin },
+  { path: "/vote", label: "Vote", icon: VoteIcon },
+  { path: "/admin", label: "Settings", icon: Settings },
+  { path: "/about", label: "About", icon: Info }
 ];
 
 export default function Sidebar() {

@@ -1,3 +1,10 @@
+INSERT INTO states (id, name, code, electoral_votes) VALUES
+(1, 'Tamil Nadu', 'TN', 39),
+(2, 'Kerala', 'KL', 20),
+(3, 'Karnataka', 'KA', 28),
+(4, 'Andhra Pradesh', 'AP', 25),
+(5, 'Telangana', 'TS', 17);
+
 INSERT INTO constituencies (id, constituency_code, name, district, state) VALUES
 (1, 'TN-001', 'Chennai Central', 'Chennai', 'Tamil Nadu'),
 (2, 'TN-002', 'Chennai South', 'Chennai', 'Tamil Nadu'),
@@ -150,6 +157,8 @@ INSERT INTO votes (id, vote_number, cast_at, voter_id, candidate_id, election_id
 (49, 'VOTE-2026-049', '2026-05-06T10:30:00', 49, 1, 5, 10),
 (50, 'VOTE-2026-050', '2026-05-06T10:45:00', 50, 1, 5, 10);
 
+-- H2 auto-increment restart statements (H2-specific, not run in prod)
+ALTER TABLE states ALTER COLUMN id RESTART WITH 6;
 ALTER TABLE constituencies ALTER COLUMN id RESTART WITH 6;
 ALTER TABLE polling_stations ALTER COLUMN id RESTART WITH 11;
 ALTER TABLE parties ALTER COLUMN id RESTART WITH 9;
