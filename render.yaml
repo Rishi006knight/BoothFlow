@@ -1,9 +1,9 @@
 services:
   - type: web
     name: boothflow
-    runtime: java
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -jar target/election-management-system-1.0.0.jar --spring.profiles.active=prod
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -17,8 +17,6 @@ services:
         fromDatabase:
           name: boothflow-db
           property: password
-      - key: JAVA_VERSION
-        value: "17"
       - key: PORT
         value: "8081"
       - key: SPRING_PROFILES_ACTIVE
