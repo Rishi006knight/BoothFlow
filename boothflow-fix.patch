@@ -1,0 +1,189 @@
+diff --git a/backend/Dockerfile b/backend/Dockerfile
+index 471bd0f..512e05a 100755
+--- a/backend/Dockerfile
++++ b/backend/Dockerfile
+@@ -11,4 +11,4 @@ COPY --from=build /app/target/election-management-system-1.0.0.jar app.jar
+ COPY entrypoint.sh entrypoint.sh
+ RUN chmod +x entrypoint.sh
+ EXPOSE 8081
+-ENTRYPOINT ["./entrypoint.sh"]
++ENTRYPOINT ["./entrypoint.sh"]
+\ No newline at end of file
+diff --git a/backend/entrypoint.sh b/backend/entrypoint.sh
+index 512726f..2d8487c 100755
+--- a/backend/entrypoint.sh
++++ b/backend/entrypoint.sh
+@@ -1,60 +1,16 @@
+ #!/bin/sh
+-# Parse Render's DATABASE_URL and convert to Spring Boot JDBC format
+-# Render DATABASE_URL formats:
+-#   External: postgres://user:pass@host:port/dbname
+-#   Internal: postgres://host/dbname (no credentials, use DATABASE_USER/DATABASE_PASS)
+-# This script handles both formats robustly.
++# BoothFlow entrypoint for Render deployment
++# Uses H2 in-memory database (no external PostgreSQL needed)
++# Render injects PORT env var - we pass it to Spring Boot
+ 
+-echo "=== DATABASE_URL Parser Debug ==="
+-echo "DATABASE_URL is set: $([ -n "$DATABASE_URL" ] && echo 'YES' || echo 'NO')"
++echo "=== BoothFlow Starting ==="
++echo "PORT from Render: ${PORT:-not set (will use 8081)}"
+ 
+-if [ -n "$DATABASE_URL" ]; then
+-  # Strip the postgres:// or postgresql:// prefix
+-  URL_BODY=$(echo "$DATABASE_URL" | sed -E 's|^postgres(ql)?://||')
+-  echo "URL_BODY after stripping prefix: ${URL_BODY}"
+-
+-  # Check if URL contains @ (user:pass@host format)
+-  if echo "$URL_BODY" | grep -q '@'; then
+-    # Format: user:pass@host:port/dbname
+-    USERPASS=$(echo "$URL_BODY" | sed 's|@.*||')
+-    HOSTPORT_DB=$(echo "$URL_BODY" | sed 's|.*@||')
+-    DBUSER=$(echo "$USERPASS" | sed 's|:.*||')
+-    DBPASS=$(echo "$USERPASS" | sed 's|[^:]*:||')
+-    echo "Extracted from URL - USER: ${DBUSER}, PASS: [hidden]"
+-  else
+-    # Format: host:port/dbname (no credentials in URL)
+-    HOSTPORT_DB="$URL_BODY"
+-    DBUSER="${DATABASE_USER:-${DB_USER:-postgres}}"
+-    DBPASS="${DATABASE_PASS:-${DB_PASSWORD:-postgres}}"
+-    echo "No @ in URL, using env vars - USER: ${DBUSER}"
+-  fi
+-
+-  # Extract host:port and dbname from HOSTPORT_DB
+-  # HOSTPORT_DB could be: host:port/dbname, host/dbname, or just host
+-  DBNAME=$(echo "$HOSTPORT_DB" | sed -E 's|^[^/]+/||')
+-  HOSTPORT=$(echo "$HOSTPORT_DB" | sed 's|/.*||')
+-
+-  # If no dbname found, default
+-  if [ -z "$DBNAME" ]; then
+-    DBNAME="electiondb"
+-  fi
+-
+-  # Extract host and port
+-  if echo "$HOSTPORT" | grep -q ':'; then
+-    HOST=$(echo "$HOSTPORT" | sed 's|:.*||')
+-    PORT=$(echo "$HOSTPORT" | sed 's|.*:||')
+-  else
+-    HOST="$HOSTPORT"
+-    PORT="5432"
+-  fi
+-
+-  export SPRING_DATASOURCE_URL="jdbc:postgresql://${HOST}:${PORT}/${DBNAME}"
+-  export SPRING_DATASOURCE_USERNAME="${DBUSER}"
+-  export SPRING_DATASOURCE_PASSWORD="${DBPASS}"
+-
+-  echo "Final JDBC URL: ${SPRING_DATASOURCE_URL}"
+-  echo "Final DB User: ${SPRING_DATASOURCE_USERNAME}"
+-  echo "=== End Parser Debug ==="
++# If Render provided a PORT, export it for Spring Boot's server.port
++if [ -n "$PORT" ]; then
++  export SERVER_PORT="$PORT"
++  echo "Using SERVER_PORT=$SERVER_PORT"
+ fi
+ 
+-exec java -jar app.jar --spring.profiles.active=prod
++# Run with default profile (H2 in-memory database)
++exec java -jar app.jar
+\ No newline at end of file
+diff --git a/backend/src/main/resources/application.properties b/backend/src/main/resources/application.properties
+index 9538fbf..94d0e7a 100755
+--- a/backend/src/main/resources/application.properties
++++ b/backend/src/main/resources/application.properties
+@@ -1,7 +1,7 @@
+ spring.application.name=election-management-system
+ 
+-# Default profile: development (H2)
+-spring.datasource.url=jdbc:h2:file:./data/electiondb;DB_CLOSE_ON_EXIT=FALSE
++# H2 in-memory database (works everywhere, no external DB needed)
++spring.datasource.url=jdbc:h2:mem:electiondb;DB_CLOSE_ON_EXIT=FALSE
+ spring.datasource.driverClassName=org.h2.Driver
+ spring.datasource.username=sa
+ spring.datasource.password=
+@@ -10,4 +10,6 @@ spring.jpa.defer-datasource-initialization=true
+ spring.jpa.show-sql=false
+ spring.h2.console.enabled=true
+ spring.h2.console.path=/h2-console
+-server.port=8081
++
++# Server port: Render injects PORT, fall back to 8081 for local dev
++server.port=${SERVER_PORT:${PORT:8081}}
+\ No newline at end of file
+diff --git a/frontend/src/api.ts b/frontend/src/api.ts
+index 92cd23e..83efa5e 100755
+--- a/frontend/src/api.ts
++++ b/frontend/src/api.ts
+@@ -1,4 +1,4 @@
+-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8081/api";
++const API_BASE = import.meta.env.VITE_API_URL || "/api";
+ 
+ async function request<T>(path: string, options?: RequestInit): Promise<T> {
+   const response = await fetch(`${API_BASE}${path}`, {
+@@ -43,4 +43,4 @@ export const api = {
+   getResults: (electionId: number) => request(`/results?electionId=${electionId}`),
+   castVote: (body: unknown) =>
+     request("/votes", { method: "POST", body: JSON.stringify(body) })
+-};
++};
+\ No newline at end of file
+diff --git a/frontend/vercel.json b/frontend/vercel.json
+index 5ba676e..8e84cff 100755
+--- a/frontend/vercel.json
++++ b/frontend/vercel.json
+@@ -5,11 +5,11 @@
+   "rewrites": [
+     {
+       "source": "/api/:path*",
+-      "destination": "https://boothflow.onrender.com/api/:path*"
++      "destination": "https://boothflow-1.onrender.com/api/:path*"
+     },
+     {
+       "source": "/(.*)",
+       "destination": "/index.html"
+     }
+   ]
+-}
++}
+\ No newline at end of file
+diff --git a/frontend/vite.config.ts b/frontend/vite.config.ts
+index 68ea5c3..92d1d2f 100755
+--- a/frontend/vite.config.ts
++++ b/frontend/vite.config.ts
+@@ -11,4 +11,4 @@ export default defineConfig({
+       }
+     }
+   }
+-});
++});
+\ No newline at end of file
+diff --git a/render.yaml b/render.yaml
+index c115835..7452c15 100755
+--- a/render.yaml
++++ b/render.yaml
+@@ -5,24 +5,5 @@ services:
+     dockerfilePath: ./backend/Dockerfile
+     dockerContext: ./backend
+     envVars:
+-      - key: DATABASE_URL
+-        fromDatabase:
+-          name: boothflow-db
+-          property: connectionString
+-      - key: DATABASE_USER
+-        fromDatabase:
+-          name: boothflow-db
+-          property: user
+-      - key: DATABASE_PASS
+-        fromDatabase:
+-          name: boothflow-db
+-          property: password
+       - key: PORT
+-        value: "8081"
+-      - key: SPRING_PROFILES_ACTIVE
+-        value: prod
+-
+-databases:
+-  - name: boothflow-db
+-    databaseName: electiondb
+-    plan: free
++        value: "8081"
+\ No newline at end of file

@@ -5,24 +5,5 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: boothflow-db
-          property: connectionString
-      - key: DATABASE_USER
-        fromDatabase:
-          name: boothflow-db
-          property: user
-      - key: DATABASE_PASS
-        fromDatabase:
-          name: boothflow-db
-          property: password
       - key: PORT
         value: "8081"
-      - key: SPRING_PROFILES_ACTIVE
-        value: prod
-
-databases:
-  - name: boothflow-db
-    databaseName: electiondb
-    plan: free
