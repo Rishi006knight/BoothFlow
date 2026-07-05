@@ -10,7 +10,6 @@ import Results from "./pages/Results";
 import States from "./pages/States";
 import Vote from "./pages/Vote";
 import Admin from "./pages/Admin";
-import About from "./pages/About";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -28,7 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/states" element={<States />} />
             <Route path="/vote" element={<Vote />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/about" element={<About />} />
+
           </Routes>
         </main>
       </div>
