@@ -2,60 +2,49 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { Constituency, Election, ResultRow } from "../types";
 import { MapPin, Users } from "lucide-react";
+import { useApi, ErrorBlock } from "../useApi";
 
 export default function States() {
-  const [constituencies, setConstituencies] = useState<Constituency[]>([]);
-  const [elections, setElections] = useState<Election[]>([]);
+  const constituenciesApi = useApi<Constituency[]>();
+  const electionsApi = useApi<Election[]>();
   const [selectedElection, setSelectedElection] = useState<number>(1);
   const [results, setResults] = useState<ResultRow[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [constituenciesData, electionsData] = await Promise.all([
-          api.getConstituencies() as Promise<Constituency[]>,
-          api.getElections() as Promise<Election[]>
-        ]);
-        setConstituencies(constituenciesData);
-        setElections(electionsData);
-        
-        if (electionsData.length > 0) {
-          setSelectedElection(electionsData[0].id);
-          const resultsData = await api.getResults(electionsData[0].id) as ResultRow[];
-          setResults(resultsData);
-        }
-      } catch (error) {
-        console.error("Failed to load data", error);
-      } finally {
-        setLoading(false);
-      }
+  const load = async () => {
+    const [c, e] = await Promise.all([
+      constituenciesApi.fetch(() => api.getConstituencies() as Promise<Constituency[]>),
+      electionsApi.fetch(() => api.getElections() as Promise<Election[]>)
+    ]);
+    if (e.length > 0) {
+      setSelectedElection(e[0].id);
+      const r = await api.getResults(e[0].id) as ResultRow[];
+      setResults(r);
     }
-    void loadData();
-  }, []);
+  };
+
+  useEffect(() => { void load(); }, []);
 
   const handleElectionChange = async (electionId: number) => {
     setSelectedElection(electionId);
     try {
-      const resultsData = await api.getResults(electionId) as ResultRow[];
-      setResults(resultsData);
+      const r = await api.getResults(electionId) as ResultRow[];
+      setResults(r);
     } catch (error) {
       console.error("Failed to load results", error);
     }
   };
 
-  // Group constituencies by state
-  const statesMap = constituencies.reduce((acc, constituency) => {
-    if (!acc[constituency.state]) {
-      acc[constituency.state] = [];
-    }
-    acc[constituency.state].push(constituency);
+  const constituencies = constituenciesApi.data || [];
+  const elections = electionsApi.data || [];
+
+  const statesMap = constituencies.reduce((acc, c) => {
+    if (!acc[c.state]) acc[c.state] = [];
+    acc[c.state].push(c);
     return acc;
   }, {} as Record<string, Constituency[]>);
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
+  if (constituenciesApi.loading) return <div className="loading">Connecting to server...</div>;
+  if (constituenciesApi.error) return <ErrorBlock message={constituenciesApi.error} onRetry={() => void load()} />;
 
   return (
     <div className="page-content">
@@ -68,11 +57,7 @@ export default function States() {
         <label>
           <span>Select Election</span>
           <select value={selectedElection} onChange={(e) => handleElectionChange(Number(e.target.value))}>
-            {elections.map((election) => (
-              <option key={election.id} value={election.id}>
-                {election.name}
-              </option>
-            ))}
+            {elections.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
           </select>
         </label>
       </div>
@@ -86,17 +71,14 @@ export default function States() {
               <span className="state-count">{stateConstituencies.length} constituencies</span>
             </div>
             <div className="constituencies-list">
-              {stateConstituencies.map((constituency) => (
-                <div key={constituency.id} className="constituency-item">
+              {stateConstituencies.map((c) => (
+                <div key={c.id} className="constituency-item">
                   <div className="constituency-info">
-                    <h4 className="constituency-name">{constituency.name}</h4>
-                    <p className="constituency-district">{constituency.district}</p>
+                    <h4 className="constituency-name">{c.name}</h4>
+                    <p className="constituency-district">{c.district}</p>
                   </div>
                   <div className="constituency-stats">
-                    <div className="mini-stat">
-                      <Users className="mini-stat-icon" />
-                      <span>{constituency.constituencyCode}</span>
-                    </div>
+                    <div className="mini-stat"><Users className="mini-stat-icon" /><span>{c.constituencyCode}</span></div>
                   </div>
                 </div>
               ))}
@@ -109,20 +91,10 @@ export default function States() {
         <h2 className="section-title">Election Results Summary</h2>
         <div className="results-table-container">
           <table className="results-table">
-            <thead>
-              <tr>
-                <th>Candidate</th>
-                <th>Party</th>
-                <th>Votes</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Candidate</th><th>Party</th><th>Votes</th></tr></thead>
             <tbody>
               {results.map((row) => (
-                <tr key={row.candidateId}>
-                  <td>{row.candidateName}</td>
-                  <td>{row.partyName}</td>
-                  <td>{row.voteCount}</td>
-                </tr>
+                <tr key={row.candidateId}><td>{row.candidateName}</td><td>{row.partyName}</td><td>{row.voteCount}</td></tr>
               ))}
             </tbody>
           </table>

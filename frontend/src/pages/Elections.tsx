@@ -2,47 +2,37 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { Election, Constituency } from "../types";
 import { Calendar, MapPin, Vote as VoteIcon, Filter } from "lucide-react";
+import { useApi, ErrorBlock } from "../useApi";
 
 export default function Elections() {
-  const [elections, setElections] = useState<Election[]>([]);
-  const [constituencies, setConstituencies] = useState<Constituency[]>([]);
+  const electionsApi = useApi<Election[]>();
+  const constituenciesApi = useApi<Constituency[]>();
   const [selectedConstituency, setSelectedConstituency] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [electionsData, constituenciesData] = await Promise.all([
-          api.getElections() as Promise<Election[]>,
-          api.getConstituencies() as Promise<Constituency[]>
-        ]);
-        setElections(electionsData);
-        setConstituencies(constituenciesData);
-      } catch (error) {
-        console.error("Failed to load data", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    void loadData();
-  }, []);
+  const load = async () => {
+    await Promise.all([
+      electionsApi.fetch(() => api.getElections() as Promise<Election[]>),
+      constituenciesApi.fetch(() => api.getConstituencies() as Promise<Constituency[]>)
+    ]);
+  };
 
-  const filteredElections = elections.filter((election) => {
-    return selectedConstituency === "all" || election.constituency.id === Number(selectedConstituency);
-  });
+  useEffect(() => { void load(); }, []);
 
-  // Group elections by type
-  const electionsByType = filteredElections.reduce((acc, election) => {
-    if (!acc[election.type]) {
-      acc[election.type] = [];
-    }
-    acc[election.type].push(election);
+  if (electionsApi.loading) return <div className="loading">Connecting to server...</div>;
+  if (electionsApi.error) return <ErrorBlock message={electionsApi.error} onRetry={() => void load()} />;
+
+  const elections = electionsApi.data || [];
+  const constituencies = constituenciesApi.data || [];
+
+  const filteredElections = elections.filter((e) =>
+    selectedConstituency === "all" || e.constituency.id === Number(selectedConstituency)
+  );
+
+  const electionsByType = filteredElections.reduce((acc, e) => {
+    if (!acc[e.type]) acc[e.type] = [];
+    acc[e.type].push(e);
     return acc;
   }, {} as Record<string, Election[]>);
-
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
 
   return (
     <div className="page-content">
@@ -56,29 +46,15 @@ export default function Elections() {
           <Filter className="filter-icon" />
           <select value={selectedConstituency} onChange={(e) => setSelectedConstituency(e.target.value)}>
             <option value="all">All Constituencies</option>
-            {constituencies.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            {constituencies.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <Calendar className="stat-icon" />
-          <span>Total Elections</span>
-          <strong>{filteredElections.length}</strong>
-        </div>
-        <div className="stat-card">
-          <VoteIcon className="stat-icon" />
-          <span>Election Types</span>
-          <strong>{Object.keys(electionsByType).length}</strong>
-        </div>
-        <div className="stat-card">
-          <MapPin className="stat-icon" />
-          <span>Constituencies</span>
-          <strong>{new Set(filteredElections.map((e) => e.constituency.id)).size}</strong>
-        </div>
+        <div className="stat-card"><Calendar className="stat-icon" /><span>Total Elections</span><strong>{filteredElections.length}</strong></div>
+        <div className="stat-card"><VoteIcon className="stat-icon" /><span>Election Types</span><strong>{Object.keys(electionsByType).length}</strong></div>
+        <div className="stat-card"><MapPin className="stat-icon" /><span>Constituencies</span><strong>{new Set(filteredElections.map((e) => e.constituency.id)).size}</strong></div>
       </div>
 
       {Object.entries(electionsByType).map(([type, typeElections]) => (
@@ -89,13 +65,7 @@ export default function Elections() {
           </div>
           <table>
             <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Constituency</th>
-                <th>Status</th>
-              </tr>
+              <tr><th>Code</th><th>Name</th><th>Date</th><th>Constituency</th><th>Status</th></tr>
             </thead>
             <tbody>
               {typeElections.map((election) => (
@@ -103,12 +73,7 @@ export default function Elections() {
                   <td>{election.electionCode}</td>
                   <td>{election.name}</td>
                   <td>{new Date(election.electionDate).toLocaleDateString()}</td>
-                  <td>
-                    <span className="voter-constituency">
-                      <MapPin size={14} />
-                      {election.constituency.name}
-                    </span>
-                  </td>
+                  <td><span className="voter-constituency"><MapPin size={14} />{election.constituency.name}</span></td>
                   <td><span className="status-badge active">Active</span></td>
                 </tr>
               ))}
@@ -118,10 +83,7 @@ export default function Elections() {
       ))}
 
       {filteredElections.length === 0 && (
-        <div className="empty-state">
-          <Calendar size={48} />
-          <p>No elections found matching your criteria.</p>
-        </div>
+        <div className="empty-state"><Calendar size={48} /><p>No elections found matching your criteria.</p></div>
       )}
     </div>
   );

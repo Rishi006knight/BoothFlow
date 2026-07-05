@@ -2,31 +2,28 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { Voter, Constituency } from "../types";
 import { Search, Users, MapPin, Phone, Filter } from "lucide-react";
+import { useApi, ErrorBlock } from "../useApi";
 
 export default function Voters() {
-  const [voters, setVoters] = useState<Voter[]>([]);
-  const [constituencies, setConstituencies] = useState<Constituency[]>([]);
+  const votersApi = useApi<Voter[]>();
+  const constituenciesApi = useApi<Constituency[]>();
   const [selectedConstituency, setSelectedConstituency] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [votersData, constituenciesData] = await Promise.all([
-          api.getVoters() as Promise<Voter[]>,
-          api.getConstituencies() as Promise<Constituency[]>
-        ]);
-        setVoters(votersData);
-        setConstituencies(constituenciesData);
-      } catch (error) {
-        console.error("Failed to load data", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    void loadData();
-  }, []);
+  const load = async () => {
+    await Promise.all([
+      votersApi.fetch(() => api.getVoters() as Promise<Voter[]>),
+      constituenciesApi.fetch(() => api.getConstituencies() as Promise<Constituency[]>)
+    ]);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  if (votersApi.loading) return <div className="loading">Connecting to server...</div>;
+  if (votersApi.error) return <ErrorBlock message={votersApi.error} onRetry={() => void load()} />;
+
+  const voters = votersApi.data || [];
+  const constituencies = constituenciesApi.data || [];
 
   const filteredVoters = voters.filter((voter) => {
     const matchesConstituency = selectedConstituency === "all" || voter.constituency.id === Number(selectedConstituency);
@@ -34,10 +31,6 @@ export default function Voters() {
                           voter.voterCode.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesConstituency && matchesSearch;
   });
-
-  if (loading) {
-    return <div className="loading">Loading...</div>;
-  }
 
   return (
     <div className="page-content">
@@ -49,20 +42,13 @@ export default function Voters() {
       <div className="filters-bar">
         <div className="search-box">
           <Search className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search voters..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input type="text" placeholder="Search voters..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <div className="filter-box">
           <Filter className="filter-icon" />
           <select value={selectedConstituency} onChange={(e) => setSelectedConstituency(e.target.value)}>
             <option value="all">All Constituencies</option>
-            {constituencies.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
+            {constituencies.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
       </div>
@@ -92,18 +78,8 @@ export default function Voters() {
                   </div>
                 </td>
                 <td>{voter.gender}</td>
-                <td>
-                  <span className="voter-phone">
-                    <Phone size={14} />
-                    {voter.phone}
-                  </span>
-                </td>
-                <td>
-                  <span className="voter-constituency">
-                    <MapPin size={14} />
-                    {voter.constituency.name}
-                  </span>
-                </td>
+                <td><span className="voter-phone"><Phone size={14} />{voter.phone}</span></td>
+                <td><span className="voter-constituency"><MapPin size={14} />{voter.constituency.name}</span></td>
               </tr>
             ))}
           </tbody>
@@ -111,10 +87,7 @@ export default function Voters() {
       </section>
 
       {filteredVoters.length === 0 && (
-        <div className="empty-state">
-          <Users size={48} />
-          <p>No voters found matching your criteria.</p>
-        </div>
+        <div className="empty-state"><Users size={48} /><p>No voters found matching your criteria.</p></div>
       )}
     </div>
   );

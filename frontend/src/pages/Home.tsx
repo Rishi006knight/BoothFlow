@@ -1,40 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { api } from "../api";
 import type { Dashboard, ResultRow, Election } from "../types";
 import { Users, Vote as VoteIcon, Calendar, TrendingUp, Plus } from "lucide-react";
+import { useApi, ErrorBlock } from "../useApi";
 
 export default function Home() {
-  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
-  const [results, setResults] = useState<ResultRow[]>([]);
-  const [elections, setElections] = useState<Election[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dashboard = useApi<Dashboard>();
+  const elections = useApi<Election[]>();
+  const results = useApi<ResultRow[]>();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [dashboardData, electionsData] = await Promise.all([
-          api.getDashboard() as Promise<Dashboard>,
-          api.getElections() as Promise<Election[]>
-        ]);
-        setDashboard(dashboardData);
-        setElections(electionsData);
-        
-        if (electionsData.length > 0) {
-          const resultsData = await api.getResults(electionsData[0].id) as ResultRow[];
-          setResults(resultsData);
-        }
-      } catch (error) {
-        console.error("Failed to load data", error);
-      } finally {
-        setLoading(false);
-      }
+  const loadAll = async () => {
+    const [d, e] = await Promise.all([
+      dashboard.fetch(() => api.getDashboard() as Promise<Dashboard>),
+      elections.fetch(() => api.getElections() as Promise<Election[]>)
+    ]);
+    if (e.length > 0) {
+      await results.fetch(() => api.getResults(e[0].id) as Promise<ResultRow[]>);
     }
-    void loadData();
-  }, []);
+  };
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
+  useEffect(() => { void loadAll(); }, []);
+
+  if (dashboard.loading) {
+    return <div className="loading">Connecting to server...</div>;
   }
+
+  if (dashboard.error) {
+    return <ErrorBlock message={dashboard.error} onRetry={() => void loadAll()} />;
+  }
+
+  const d = dashboard.data!;
+  const el = elections.data || [];
+  const r = results.data || [];
 
   return (
     <div className="page-content">
@@ -47,22 +44,22 @@ export default function Home() {
         <div className="stat-card">
           <Users className="stat-icon" />
           <span>Total Voters</span>
-          <strong>{dashboard?.voters || 0}</strong>
+          <strong>{d.voters || 0}</strong>
         </div>
         <div className="stat-card">
           <VoteIcon className="stat-icon" />
           <span>Votes Cast</span>
-          <strong>{dashboard?.votes || 0}</strong>
+          <strong>{d.votes || 0}</strong>
         </div>
         <div className="stat-card">
           <Calendar className="stat-icon" />
           <span>Active Elections</span>
-          <strong>{dashboard?.elections || 0}</strong>
+          <strong>{d.elections || 0}</strong>
         </div>
         <div className="stat-card">
           <TrendingUp className="stat-icon" />
           <span>Candidates</span>
-          <strong>{dashboard?.candidates || 0}</strong>
+          <strong>{d.candidates || 0}</strong>
         </div>
       </section>
 
@@ -84,7 +81,7 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {elections.slice(0, 5).map((election) => (
+            {el.slice(0, 5).map((election) => (
               <tr key={election.id}>
                 <td>{election.name}</td>
                 <td>{election.type}</td>
@@ -113,8 +110,8 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {results.map((row) => {
-              const totalVotes = results.reduce((sum, r) => sum + r.voteCount, 0);
+            {r.map((row) => {
+              const totalVotes = r.reduce((sum, x) => sum + x.voteCount, 0);
               const percentage = totalVotes > 0 ? ((row.voteCount / totalVotes) * 100).toFixed(1) : "0";
               return (
                 <tr key={row.candidateId}>
