@@ -1,1 +1,3 @@
-// Deprecated: About page is no longer used and has been removed from navigation.
+export default function About() {
+  return null;
+}
