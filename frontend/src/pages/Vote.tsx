@@ -19,7 +19,7 @@ export default function Vote() {
   const [hasVoted, setHasVoted] = useState(false);
 
   const load = async () => {
-    const [e, p] = await Promise.all([
+    const [e] = await Promise.all([
       electionsApi.fetch(() => api.getElections() as Promise<Election[]>),
       pollingApi.fetch(() => api.getPollingStations() as Promise<PollingStation[]>)
     ]);
