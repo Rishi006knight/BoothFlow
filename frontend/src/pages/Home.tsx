@@ -10,7 +10,7 @@ export default function Home() {
   const results = useApi<ResultRow[]>();
 
   const loadAll = async () => {
-    const [d, e] = await Promise.all([
+    const [, e] = await Promise.all([
       dashboard.fetch(() => api.getDashboard() as Promise<Dashboard>),
       elections.fetch(() => api.getElections() as Promise<Election[]>)
     ]);

@@ -11,7 +11,7 @@ export default function States() {
   const [results, setResults] = useState<ResultRow[]>([]);
 
   const load = async () => {
-    const [c, e] = await Promise.all([
+    const [, e] = await Promise.all([
       constituenciesApi.fetch(() => api.getConstituencies() as Promise<Constituency[]>),
       electionsApi.fetch(() => api.getElections() as Promise<Election[]>)
     ]);
