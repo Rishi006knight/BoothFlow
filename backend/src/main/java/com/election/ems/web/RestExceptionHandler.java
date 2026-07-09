@@ -1,6 +1,6 @@
 package com.election.ems.web;
 
-import jakarta.persistence.EntityNotFoundException;
+import com.election.ems.exception.EntityNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;

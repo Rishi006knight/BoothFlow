@@ -9,7 +9,6 @@ import com.election.ems.entity.State;
 import com.election.ems.entity.Vote;
 import com.election.ems.entity.Voter;
 import com.election.ems.service.ElectionService;
-import com.election.ems.web.SystemInfo;
 import com.election.ems.web.dto.CandidateRequest;
 import com.election.ems.web.dto.CastVoteRequest;
 import com.election.ems.web.dto.ConstituencyRequest;
@@ -122,8 +121,9 @@ public class ElectionController {
         return electionService.getState(id);
     }
 
-    @GetMapping("/about")
-    public SystemInfo about() {
-        return electionService.getSystemInfo();
+    @PostMapping("/seed")
+    public ApiResponse seed() {
+        electionService.seedDatabase();
+        return new ApiResponse("Database seeded successfully");
     }
 }

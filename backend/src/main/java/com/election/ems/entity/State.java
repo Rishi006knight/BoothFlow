@@ -1,22 +1,18 @@
 package com.election.ems.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "states")
+@Document(collection = "states")
 public class State {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true)
     private String name;
     
-    @Column(nullable = false)
     private String code;
     
-    @Column
     private Integer electoralVotes;
     
     public State() {}

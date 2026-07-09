@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "https://boothflow-1.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();
@@ -55,5 +55,6 @@ export const api = {
     request("/voters", { method: "POST", body: JSON.stringify(body) }),
   getResults: (electionId: number) => request(`/results?electionId=${electionId}`),
   castVote: (body: unknown) =>
-    request("/votes", { method: "POST", body: JSON.stringify(body) })
+    request("/votes", { method: "POST", body: JSON.stringify(body) }),
+  seedDatabase: () => request("/seed", { method: "POST" })
 };

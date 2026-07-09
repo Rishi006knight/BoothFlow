@@ -1,22 +1,18 @@
 package com.election.ems.repository;
 
 import com.election.ems.entity.Vote;
-import com.election.ems.web.ResultRow;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
-public interface VoteRepository extends JpaRepository<Vote, Long> {
+@Repository
+public interface VoteRepository extends MongoRepository<Vote, Long> {
 
-    boolean existsByVoterIdAndElectionId(Long voterId, Long electionId);
+    @Query("{ 'voter.$id' : ?0, 'election.$id' : ?1 }")
+    List<Vote> findByVoterIdAndElectionId(Long voterId, Long electionId);
 
-    @Query("""
-            select new com.election.ems.web.ResultRow(v.candidate.id, v.candidate.name, v.candidate.party.name, count(v))
-            from Vote v
-            where v.election.id = :electionId
-            group by v.candidate.id, v.candidate.name, v.candidate.party.name
-            order by count(v) desc, v.candidate.name asc
-            """)
-    List<ResultRow> findResultsByElectionId(@Param("electionId") Long electionId);
+    @Query("{ 'election.$id' : ?0 }")
+    List<Vote> findByElectionId(Long electionId);
 }

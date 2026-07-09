@@ -16,9 +16,9 @@ import com.election.ems.repository.PollingStationRepository;
 import com.election.ems.repository.StateRepository;
 import com.election.ems.repository.VoteRepository;
 import com.election.ems.repository.VoterRepository;
+import com.election.ems.config.DatabaseInitializer;
 import com.election.ems.web.DashboardResponse;
 import com.election.ems.web.ResultRow;
-import com.election.ems.web.SystemInfo;
 import com.election.ems.web.dto.CandidateRequest;
 import com.election.ems.web.dto.CastVoteRequest;
 import com.election.ems.web.dto.ConstituencyRequest;
@@ -26,7 +26,7 @@ import com.election.ems.web.dto.ElectionRequest;
 import com.election.ems.web.dto.PartyRequest;
 import com.election.ems.web.dto.PollingStationRequest;
 import com.election.ems.web.dto.VoterRequest;
-import jakarta.persistence.EntityNotFoundException;
+import com.election.ems.exception.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,6 +46,8 @@ public class ElectionService {
     private final VoteRepository voteRepository;
     private final StateRepository stateRepository;
 
+    private final DatabaseInitializer databaseInitializer;
+
     public ElectionService(ConstituencyRepository constituencyRepository,
                            PollingStationRepository pollingStationRepository,
                            PartyRepository partyRepository,
@@ -53,7 +55,8 @@ public class ElectionService {
                            CandidateRepository candidateRepository,
                            VoterRepository voterRepository,
                            VoteRepository voteRepository,
-                           StateRepository stateRepository) {
+                           StateRepository stateRepository,
+                           DatabaseInitializer databaseInitializer) {
         this.constituencyRepository = constituencyRepository;
         this.pollingStationRepository = pollingStationRepository;
         this.partyRepository = partyRepository;
@@ -62,6 +65,11 @@ public class ElectionService {
         this.voterRepository = voterRepository;
         this.voteRepository = voteRepository;
         this.stateRepository = stateRepository;
+        this.databaseInitializer = databaseInitializer;
+    }
+
+    public void seedDatabase() {
+        databaseInitializer.seed(true);
     }
 
     public List<Constituency> getConstituencies() {
@@ -105,18 +113,29 @@ public class ElectionService {
                 .orElseThrow(() -> new EntityNotFoundException("State not found: " + id));
     }
 
-    public SystemInfo getSystemInfo() {
-        return new SystemInfo();
-    }
-
     public List<ResultRow> getResults(Long electionId) {
-        return voteRepository.findResultsByElectionId(electionId);
+        List<Vote> votes = voteRepository.findByElectionId(electionId);
+        return votes.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        Vote::getCandidate,
+                        java.util.stream.Collectors.counting()
+                ))
+                .entrySet().stream()
+                .map(entry -> new ResultRow(
+                        entry.getKey().getId(),
+                        entry.getKey().getName(),
+                        entry.getKey().getParty().getName(),
+                        entry.getValue()
+                ))
+                .sorted(java.util.Comparator.comparingLong(ResultRow::voteCount).reversed()
+                        .thenComparing(ResultRow::candidateName))
+                .toList();
     }
 
     public DashboardResponse getDashboard() {
         List<DashboardResponse.ResultCard> resultCards = new ArrayList<>();
         for (Election election : electionRepository.findAll()) {
-            List<ResultRow> results = voteRepository.findResultsByElectionId(election.getId());
+            List<ResultRow> results = getResults(election.getId());
             if (!results.isEmpty()) {
                 ResultRow winner = results.get(0);
                 resultCards.add(new DashboardResponse.ResultCard(
@@ -214,7 +233,7 @@ public class ElectionService {
         Election election = getElection(request.electionId());
         PollingStation pollingStation = getPollingStation(request.pollingStationId());
 
-        if (voteRepository.existsByVoterIdAndElectionId(voter.getId(), election.getId())) {
+        if (!voteRepository.findByVoterIdAndElectionId(voter.getId(), election.getId()).isEmpty()) {
             throw new IllegalArgumentException("This voter has already voted in the selected election.");
         }
         if (!candidate.getElection().getId().equals(election.getId())) {

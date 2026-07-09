@@ -1,7 +1,9 @@
 package com.election.ems.repository;
 
 import com.election.ems.entity.Election;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
-public interface ElectionRepository extends JpaRepository<Election, Long> {
+@Repository
+public interface ElectionRepository extends MongoRepository<Election, Long> {
 }

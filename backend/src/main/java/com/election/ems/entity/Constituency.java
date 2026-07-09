@@ -1,32 +1,22 @@
 package com.election.ems.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
+@Document(collection = "constituencies")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Table(name = "constituencies")
 public class Constituency {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
     private String constituencyCode;
 
-    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
     private String district;
 
-    @Column(nullable = false)
     private String state;
 
     public Long getId() {

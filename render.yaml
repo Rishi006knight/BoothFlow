@@ -5,5 +5,9 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
+      - key: MONGODB_URI
+        sync: false
       - key: PORT
         value: "8081"
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
