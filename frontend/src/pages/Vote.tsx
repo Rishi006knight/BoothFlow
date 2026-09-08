@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Candidate, Election, PollingStation, Voter } from "../types";
 import { CheckCircle, Vote as VoteIcon, User, MapPin, AlertTriangle, RefreshCw } from "lucide-react";
@@ -124,6 +125,7 @@ export default function Vote() {
   });
 
   if (hasVoted) {
+    const votedElection = elections.find((e) => e.id === selectedElection);
     return (
       <div className="page-content">
         <div className="vote-success-container">
@@ -131,10 +133,52 @@ export default function Vote() {
             <CheckCircle className="success-icon" />
             <h2>Vote Cast Successfully!</h2>
             <p>Thank you for participating in the democratic process.</p>
-            <p>Your vote has been recorded and will be counted.</p>
-            <button onClick={() => { setHasVoted(false); setIsAuthenticated(false); }}>
-              Return to Voter Login
-            </button>
+            {votedElection && (
+              <div style={{
+                margin: "1rem 0",
+                padding: "0.75rem",
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "8px",
+                color: "#166534",
+                fontSize: "0.9rem"
+              }}>
+                <strong>Recorded in Election:</strong> {votedElection.name}
+                {votedElection.constituency?.name && (
+                  <div><strong>Constituency:</strong> {votedElection.constituency.name} ({votedElection.constituency.state})</div>
+                )}
+              </div>
+            )}
+            <p>Your vote has been recorded and immediately added to the live tally.</p>
+            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", marginTop: "1.25rem", flexWrap: "wrap" }}>
+              <Link
+                to={`/results?electionId=${selectedElection}`}
+                style={{
+                  display: "inline-block",
+                  padding: "10px 20px",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  textDecoration: "none"
+                }}
+              >
+                View Live Results
+              </Link>
+              <button
+                onClick={() => { setHasVoted(false); setIsAuthenticated(false); }}
+                style={{
+                  background: "#f8fafc",
+                  color: "#334155",
+                  border: "1px solid #cbd5e1",
+                  padding: "10px 18px",
+                  borderRadius: "8px",
+                  cursor: "pointer"
+                }}
+              >
+                Switch / New Voter
+              </button>
+            </div>
           </div>
         </div>
       </div>

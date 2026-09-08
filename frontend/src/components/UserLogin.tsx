@@ -75,9 +75,9 @@ export default function UserLogin({ onLogin }: UserLoginProps) {
           <p style={{ fontWeight: 600, marginBottom: "0.5rem", fontSize: "0.9rem" }}>
             Select Registered Voter:
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "220px", overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "240px", overflowY: "auto" }}>
             {voters.length > 0 ? (
-              voters.slice(0, 5).map((v) => (
+              voters.map((v) => (
                 <button
                   key={v.id}
                   type="button"
