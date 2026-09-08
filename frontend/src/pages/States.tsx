@@ -57,7 +57,11 @@ export default function States() {
         <label>
           <span>Select Election</span>
           <select value={selectedElection} onChange={(e) => handleElectionChange(Number(e.target.value))}>
-            {elections.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
+            {elections.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.constituency?.name ? `${e.name} — ${e.constituency.name}` : e.name}
+              </option>
+            ))}
           </select>
         </label>
       </div>

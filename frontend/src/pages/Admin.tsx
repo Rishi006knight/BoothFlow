@@ -7,6 +7,7 @@ import type {
   Election,
   Party,
   PollingStation,
+  ResultRow,
   Voter
 } from "../types";
 import { Settings, Database, Users, Vote as VoteIcon, Building2, Calendar, UserPlus } from "lucide-react";
@@ -402,7 +403,7 @@ export default function Admin() {
                 label="Candidate"
                 value={forms.vote.candidateId}
                 onChange={(value) => updateForm("vote", "candidateId", value)}
-                options={electionCandidates.map((item) => ({ value: item.id, label: `${item.name} - ${item.party.name}` }))}
+                options={electionCandidates.map((item) => ({ value: item.id, label: `${item.name} - ${item.party?.name ?? "Independent"}` }))}
               />
               <SelectField
                 label="Polling Station"

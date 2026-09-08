@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Candidate, Election, PollingStation, Voter } from "../types";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Vote as VoteIcon, User, MapPin, AlertTriangle, RefreshCw } from "lucide-react";
 import UserLogin from "../components/UserLogin";
 import { useApi, ErrorBlock } from "../useApi";
 
@@ -293,8 +293,8 @@ export default function Vote() {
                   <div className="candidate-avatar">{candidate.name.split(" ").map((n) => n[0]).join("")}</div>
                   <div className="candidate-details">
                     <h4>{candidate.name}</h4>
-                    <p>{candidate.party.name}</p>
-                    <span className="party-symbol">{candidate.party.symbol}</span>
+                    <p>{candidate.party?.name ?? "Independent"}</p>
+                    <span className="party-symbol">{candidate.party?.symbol ?? "🗳️"}</span>
                   </div>
                   {selectedCandidate === candidate.id && <CheckCircle className="check-icon" />}
                 </div>

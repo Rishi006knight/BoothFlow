@@ -26,7 +26,7 @@ export default function Voters() {
   const constituencies = constituenciesApi.data || [];
 
   const filteredVoters = voters.filter((voter) => {
-    const matchesConstituency = selectedConstituency === "all" || voter.constituency.id === Number(selectedConstituency);
+    const matchesConstituency = selectedConstituency === "all" || voter.constituency?.id === Number(selectedConstituency);
     const matchesSearch = voter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           voter.voterCode.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesConstituency && matchesSearch;
@@ -79,7 +79,7 @@ export default function Voters() {
                 </td>
                 <td>{voter.gender}</td>
                 <td><span className="voter-phone"><Phone size={14} />{voter.phone}</span></td>
-                <td><span className="voter-constituency"><MapPin size={14} />{voter.constituency.name}</span></td>
+                <td><span className="voter-constituency"><MapPin size={14} />{voter.constituency?.name ?? "General"}</span></td>
               </tr>
             ))}
           </tbody>

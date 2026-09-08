@@ -26,9 +26,9 @@ export default function Candidates() {
   const elections = electionsApi.data || [];
 
   const filteredCandidates = candidates.filter((c) => {
-    const matchesElection = selectedElection === "all" || c.election.id === Number(selectedElection);
+    const matchesElection = selectedElection === "all" || c.election?.id === Number(selectedElection);
     const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         c.party.name.toLowerCase().includes(searchTerm.toLowerCase());
+                         (c.party?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase());
     return matchesElection && matchesSearch;
   });
 
@@ -62,18 +62,18 @@ export default function Candidates() {
           <div key={candidate.id} className="candidate-card">
             <div className="candidate-header">
               <div className="candidate-avatar">{candidate.name.split(" ").map((n) => n[0]).join("")}</div>
-              <div className="candidate-party-badge">{candidate.party.symbol}</div>
+              <div className="candidate-party-badge">{candidate.party?.symbol ?? "🗳️"}</div>
             </div>
             <h3 className="candidate-name">{candidate.name}</h3>
-            <p className="candidate-party">{candidate.party.name}</p>
+            <p className="candidate-party">{candidate.party?.name ?? "Independent"}</p>
             <div className="candidate-details">
               <div className="detail-item"><span className="detail-label">Age</span><span className="detail-value">{candidate.age}</span></div>
               <div className="detail-item">
                 <span className="detail-label">Election</span>
                 <span className="detail-value">
-                  {candidate.election.constituency?.name
-                    ? `${candidate.election.name} (${candidate.election.constituency.name})`
-                    : candidate.election.name}
+                  {candidate.election?.constituency?.name
+                    ? `${candidate.election?.name} (${candidate.election.constituency.name})`
+                    : (candidate.election?.name ?? "General")}
                 </span>
               </div>
             </div>

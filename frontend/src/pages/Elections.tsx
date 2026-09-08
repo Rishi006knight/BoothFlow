@@ -25,7 +25,7 @@ export default function Elections() {
   const constituencies = constituenciesApi.data || [];
 
   const filteredElections = elections.filter((e) =>
-    selectedConstituency === "all" || e.constituency.id === Number(selectedConstituency)
+    selectedConstituency === "all" || e.constituency?.id === Number(selectedConstituency)
   );
 
   const electionsByType = filteredElections.reduce((acc, e) => {
@@ -73,7 +73,7 @@ export default function Elections() {
                   <td>{election.electionCode}</td>
                   <td>{election.name}</td>
                   <td>{new Date(election.electionDate).toLocaleDateString()}</td>
-                  <td><span className="voter-constituency"><MapPin size={14} />{election.constituency.name}</span></td>
+                  <td><span className="voter-constituency"><MapPin size={14} />{election.constituency?.name ?? "General"}</span></td>
                   <td><span className="status-badge active">Active</span></td>
                 </tr>
               ))}
