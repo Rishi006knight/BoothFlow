@@ -213,7 +213,7 @@ export default function Admin() {
                 <select value={selectedElectionId} onChange={(event) => setSelectedElectionId(Number(event.target.value))}>
                   {elections.map((election) => (
                     <option key={election.id} value={election.id}>
-                      {election.name}
+                      {election.constituency?.name ? `${election.name} — ${election.constituency.name}` : election.name}
                     </option>
                   ))}
                 </select>
@@ -341,7 +341,10 @@ export default function Admin() {
               label="Election"
               value={forms.candidate.electionId}
               onChange={(value) => updateForm("candidate", "electionId", value)}
-              options={elections.map((item) => ({ value: item.id, label: item.name }))}
+              options={elections.map((item) => ({
+                value: item.id,
+                label: item.constituency?.name ? `${item.name} — ${item.constituency.name}` : item.name
+              }))}
             />
           </FormCard>
         )}
@@ -385,7 +388,10 @@ export default function Admin() {
                   updateForm("vote", "electionId", value);
                   setSelectedElectionId(Number(value));
                 }}
-                options={elections.map((item) => ({ value: item.id, label: item.name }))}
+                options={elections.map((item) => ({
+                  value: item.id,
+                  label: item.constituency?.name ? `${item.name} — ${item.constituency.name}` : item.name
+                }))}
               />
               <SelectField
                 label="Voter"

@@ -86,7 +86,7 @@ export default function Home() {
                 <td>{election.name}</td>
                 <td>{election.type}</td>
                 <td>{new Date(election.electionDate).toLocaleDateString()}</td>
-                <td>{election.constituency.name}</td>
+                <td>{election.constituency?.name ?? "General"}</td>
                 <td>
                   <span className="status-badge active">Active</span>
                 </td>

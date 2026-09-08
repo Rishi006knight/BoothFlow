@@ -127,7 +127,18 @@ public class ElectionService {
         // Fetch all candidates registered for this election so even candidates with 0 votes appear
         List<Candidate> candidates = candidateRepository.findByElectionId(electionId);
         
-        return candidates.stream()
+        // Also include any candidate that received votes in this election even if query missed them
+        java.util.Set<Long> registeredCandidateIds = candidates.stream()
+                .map(Candidate::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Candidate> allContestingCandidates = new ArrayList<>(candidates);
+        for (Long candidateId : voteCounts.keySet()) {
+            if (!registeredCandidateIds.contains(candidateId)) {
+                candidateRepository.findById(candidateId).ifPresent(allContestingCandidates::add);
+            }
+        }
+        
+        return allContestingCandidates.stream()
                 .map(candidate -> new ResultRow(
                         candidate.getId(),
                         candidate.getName(),
@@ -147,9 +158,12 @@ public class ElectionService {
                 ResultRow top = results.get(0);
                 if (top.voteCount() > 0) {
                     boolean isTie = results.size() > 1 && results.get(1).voteCount() == top.voteCount();
+                    String electionDisplayName = election.getConstituency() != null
+                            ? election.getName() + " — " + election.getConstituency().getName()
+                            : election.getName();
                     resultCards.add(new DashboardResponse.ResultCard(
                             election.getId(),
-                            election.getName(),
+                            electionDisplayName,
                             isTie ? top.candidateName() + " (Tied with " + results.get(1).candidateName() + ")" : top.candidateName(),
                             isTie ? "Tied" : top.partyName(),
                             top.voteCount()
@@ -246,17 +260,23 @@ public class ElectionService {
         if (!voteRepository.findByVoterIdAndElectionId(voter.getId(), election.getId()).isEmpty()) {
             throw new IllegalArgumentException("This voter has already voted in the selected election.");
         }
-        if (!candidate.getElection().getId().equals(election.getId())) {
+        if (candidate.getElection() == null || !election.getId().equals(candidate.getElection().getId())) {
             throw new IllegalArgumentException("Candidate does not belong to the selected election.");
         }
-        if (!voter.getConstituency().getId().equals(election.getConstituency().getId())) {
-            throw new IllegalArgumentException("Voter is registered in " + voter.getConstituency().getName()
-                    + ", but the selected election is for " + election.getConstituency().getName() + ".");
+        if (voter.getConstituency() == null || election.getConstituency() == null
+                || !voter.getConstituency().getId().equals(election.getConstituency().getId())) {
+            String voterConst = voter.getConstituency() != null ? voter.getConstituency().getName() : "Unknown";
+            String electionConst = election.getConstituency() != null ? election.getConstituency().getName() : "Unknown";
+            throw new IllegalArgumentException("Voter is registered in " + voterConst
+                    + ", but the selected election is for " + electionConst + ".");
         }
-        if (!pollingStation.getConstituency().getId().equals(election.getConstituency().getId())) {
+        if (pollingStation.getConstituency() == null || election.getConstituency() == null
+                || !pollingStation.getConstituency().getId().equals(election.getConstituency().getId())) {
+            String stationConst = pollingStation.getConstituency() != null ? pollingStation.getConstituency().getName() : "Unknown";
+            String electionConst = election.getConstituency() != null ? election.getConstituency().getName() : "Unknown";
             throw new IllegalArgumentException("Anomaly prevented: Polling station '" + pollingStation.getName()
-                    + "' is in " + pollingStation.getConstituency().getName()
-                    + ", but the selected election is for " + election.getConstituency().getName() + ".");
+                    + "' is in " + stationConst
+                    + ", but the selected election is for " + electionConst + ".");
         }
 
         Vote vote = new Vote();

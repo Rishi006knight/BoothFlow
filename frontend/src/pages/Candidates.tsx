@@ -68,8 +68,14 @@ export default function Candidates() {
             <p className="candidate-party">{candidate.party.name}</p>
             <div className="candidate-details">
               <div className="detail-item"><span className="detail-label">Age</span><span className="detail-value">{candidate.age}</span></div>
-              <div className="detail-item"><span className="detail-label">Qualification</span><span className="detail-value">{candidate.qualification}</span></div>
-              <div className="detail-item"><span className="detail-label">Election</span><span className="detail-value">{candidate.election.name}</span></div>
+              <div className="detail-item">
+                <span className="detail-label">Election</span>
+                <span className="detail-value">
+                  {candidate.election.constituency?.name
+                    ? `${candidate.election.name} (${candidate.election.constituency.name})`
+                    : candidate.election.name}
+                </span>
+              </div>
             </div>
           </div>
         ))}

@@ -312,19 +312,42 @@ public class DatabaseInitializer implements CommandLineRunner {
                         candidateRepository.save(c);
                     }
                 }
+
+                java.util.Set<Long> southCandidateIds = candidateRepository.findAll().stream()
+                        .filter(c -> c.getCandidateCode() != null && (
+                                c.getCandidateCode().equals("CAN-DMK-002") ||
+                                c.getCandidateCode().equals("CAN-AIADMK-002") ||
+                                c.getCandidateCode().equals("CAN-BJP-002") ||
+                                c.getCandidateCode().equals("CAN-PMK-001")
+                        ))
+                        .map(Candidate::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+
                 // Ensure votes for Chennai South candidates belong to tnEl2
                 for (Vote v : voteRepository.findAll()) {
-                    if (v.getCandidate() != null && v.getCandidate().getId() != null) {
-                        Long cId = v.getCandidate().getId();
-                        if (cId == 5 || cId == 6 || cId == 7 || cId == 8) {
-                            v.setElection(tnEl2);
-                            voteRepository.save(v);
+                    boolean isSouthVote = false;
+                    if (v.getCandidate() != null) {
+                        if (v.getCandidate().getId() != null && southCandidateIds.contains(v.getCandidate().getId())) {
+                            isSouthVote = true;
+                        } else if (v.getCandidate().getCandidateCode() != null && (
+                                v.getCandidate().getCandidateCode().equals("CAN-DMK-002") ||
+                                v.getCandidate().getCandidateCode().equals("CAN-AIADMK-002") ||
+                                v.getCandidate().getCandidateCode().equals("CAN-BJP-002") ||
+                                v.getCandidate().getCandidateCode().equals("CAN-PMK-001")
+                        )) {
+                            isSouthVote = true;
                         }
                     }
+                    if (isSouthVote) {
+                        v.setElection(tnEl2);
+                        voteRepository.save(v);
+                    }
                 }
+                System.out.println("[DatabaseInitializer] Chennai South contest (TN-ASM-2026-002) linked with "
+                        + southCandidateIds.size() + " candidates.");
             }
         } catch (Exception e) {
-            // Non-fatal cleanup
+            System.err.println("[DatabaseInitializer] Error during self-healing: " + e.getMessage());
         }
     }
 }
