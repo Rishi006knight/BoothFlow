@@ -48,7 +48,18 @@ export default function Candidates() {
           <Filter className="filter-icon" />
           <select value={selectedElection} onChange={(e) => setSelectedElection(e.target.value)}>
             <option value="all">All Elections</option>
-            {elections.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
+            {elections.map((e) => {
+              const label = e.name.toLowerCase().includes(e.constituency?.name?.toLowerCase() || "")
+                ? e.name
+                : e.constituency?.name
+                ? `${e.name} (${e.constituency.name})`
+                : e.name;
+              return (
+                <option key={e.id} value={e.id}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>

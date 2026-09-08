@@ -44,6 +44,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         seed(false);
+        fixDuplicateElectionsAndNames();
     }
 
     public synchronized void seed(boolean clearFirst) {
@@ -149,19 +150,16 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         // Elections
         // TN
-        Election tnEl1 = createElection("TN-ASM-2026-001", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn1);
-        Election tnEl2 = createElection("TN-ASM-2026-002", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn2);
-        Election tnEl3 = createElection("TN-ASM-2026-003", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn3);
-        Election tnEl4 = createElection("TN-ASM-2026-004", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn4);
-        Election tnEl5 = createElection("TN-ASM-2026-005", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn5);
+        Election tnEl1 = createElection("TN-ASM-2026-001", "Tamil Nadu Assembly Election 2026 - Chennai Central", "Assembly", LocalDate.of(2026, 5, 6), tn1);
+        Election tnEl2 = createElection("TN-ASM-2026-002", "Tamil Nadu Assembly Election 2026 - Chennai South", "Assembly", LocalDate.of(2026, 5, 6), tn2);
         // KL
-        Election klEl1 = createElection("KL-ASM-2026-001", "Kerala Assembly Election 2026", "Assembly", LocalDate.of(2026, 4, 20), kl1);
+        Election klEl1 = createElection("KL-ASM-2026-001", "Kerala Assembly Election 2026 - Thiruvananthapuram Central", "Assembly", LocalDate.of(2026, 4, 20), kl1);
         // KA
-        Election kaEl1 = createElection("KA-ASM-2026-001", "Karnataka Assembly Election 2026", "Assembly", LocalDate.of(2026, 3, 15), ka1);
+        Election kaEl1 = createElection("KA-ASM-2026-001", "Karnataka Assembly Election 2026 - Bangalore Central", "Assembly", LocalDate.of(2026, 3, 15), ka1);
         // AP
-        Election apEl1 = createElection("AP-ASM-2026-001", "Andhra Pradesh Assembly Election 2026", "Assembly", LocalDate.of(2026, 6, 1), ap1);
+        Election apEl1 = createElection("AP-ASM-2026-001", "Andhra Pradesh Assembly Election 2026 - Visakhapatnam East", "Assembly", LocalDate.of(2026, 6, 1), ap1);
         // TS
-        Election tsEl1 = createElection("TS-ASM-2026-001", "Telangana Assembly Election 2026", "Assembly", LocalDate.of(2026, 2, 10), ts1);
+        Election tsEl1 = createElection("TS-ASM-2026-001", "Telangana Assembly Election 2026 - Hyderabad Central", "Assembly", LocalDate.of(2026, 2, 10), ts1);
 
         // Candidates
         // TN-ASM-2026-001
@@ -263,4 +261,31 @@ public class DatabaseInitializer implements CommandLineRunner {
         v.setPollingStation(station);
         return voteRepository.save(v);
     }
+
+    private void fixDuplicateElectionsAndNames() {
+        try {
+            for (Election election : electionRepository.findAll()) {
+                // Remove empty duplicate elections that have no candidates and no votes
+                if ("TN-ASM-2026-003".equals(election.getElectionCode())
+                        || "TN-ASM-2026-004".equals(election.getElectionCode())
+                        || "TN-ASM-2026-005".equals(election.getElectionCode())) {
+                    boolean hasCandidates = !candidateRepository.findByElectionId(election.getId()).isEmpty();
+                    boolean hasVotes = !voteRepository.findByElectionId(election.getId()).isEmpty();
+                    if (!hasCandidates && !hasVotes) {
+                        electionRepository.delete(election);
+                        continue;
+                    }
+                }
+
+                // If election name is generic and doesn't mention its constituency, append constituency name
+                if (election.getConstituency() != null && !election.getName().contains("-") && !election.getName().contains("(")) {
+                    election.setName(election.getName() + " - " + election.getConstituency().getName());
+                    electionRepository.save(election);
+                }
+            }
+        } catch (Exception e) {
+            // Non-fatal cleanup
+        }
+    }
 }
+

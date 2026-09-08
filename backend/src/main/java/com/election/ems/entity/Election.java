@@ -71,4 +71,18 @@ public class Election {
     public void setConstituency(Constituency constituency) {
         this.constituency = constituency;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Election election = (Election) o;
+        return java.util.Objects.equals(id, election.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+

@@ -85,18 +85,7 @@ export default function Admin() {
     }
   }
 
-  async function handleSeed() {
-    setLoading(true);
-    setMessage("Seeding database...");
-    try {
-      await api.seedDatabase();
-      setMessage("Database seeded successfully.");
-      await loadAll();
-    } catch (error) {
-      setMessage((error as Error).message);
-      setLoading(false);
-    }
-  }
+
 
   useEffect(() => {
     void loadAll();
@@ -197,18 +186,9 @@ export default function Admin() {
       <div className="admin-content">
         {activeTab === "dashboard" && (
           <div className="admin-dashboard">
-            <div className="status-message" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <span>Status:</span>
-                <strong>{loading ? "Loading data..." : message}</strong>
-              </div>
-              <button 
-                onClick={handleSeed} 
-                disabled={loading} 
-                style={{ marginLeft: "auto", padding: "0.25rem 0.75rem", fontSize: "0.875rem" }}
-              >
-                Seed Database
-              </button>
+            <div className="status-message">
+              <span>Status:</span>
+              <strong>{loading ? "Loading data..." : message}</strong>
             </div>
             <div className="stats-grid">
               {dashboard &&

@@ -58,4 +58,18 @@ public class Constituency {
     public void setState(String state) {
         this.state = state;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Constituency that = (Constituency) o;
+        return java.util.Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+

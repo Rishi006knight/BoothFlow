@@ -81,4 +81,18 @@ public class Candidate {
     public void setElection(Election election) {
         this.election = election;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Candidate candidate = (Candidate) o;
+        return java.util.Objects.equals(id, candidate.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+

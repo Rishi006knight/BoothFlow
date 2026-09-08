@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export function useApi<T>() {
   const [data, setData] = useState<T | null>(null);
@@ -29,6 +29,27 @@ export function useApi<T>() {
   return { data, setData, loading, error, fetch, retry };
 }
 
+export function LoadingBlock({ text = "Connecting to server..." }: { text?: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed((prev) => prev + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="loading">
+      <div className="spinner" />
+      <div>{text}</div>
+      {elapsed >= 4 && (
+        <p style={{ color: "#64748b", fontSize: "0.875rem", margin: 0, maxWidth: "420px", textAlign: "center" }}>
+          Free-tier cloud backend spins down when idle. Waking up server ({elapsed}s)...
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="page-content">
@@ -42,3 +63,5 @@ export function ErrorBlock({ message, onRetry }: { message: string; onRetry: () 
     </div>
   );
 }
+
+

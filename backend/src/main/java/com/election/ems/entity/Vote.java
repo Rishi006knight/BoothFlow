@@ -84,4 +84,18 @@ public class Vote {
     public void setPollingStation(PollingStation pollingStation) {
         this.pollingStation = pollingStation;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Vote vote = (Vote) o;
+        return java.util.Objects.equals(id, vote.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+

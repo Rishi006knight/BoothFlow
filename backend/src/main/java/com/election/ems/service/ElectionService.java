@@ -115,17 +115,24 @@ public class ElectionService {
 
     public List<ResultRow> getResults(Long electionId) {
         List<Vote> votes = voteRepository.findByElectionId(electionId);
-        return votes.stream()
+        
+        // Group by Candidate ID to ensure proper aggregation regardless of proxy identity
+        java.util.Map<Long, Long> voteCounts = votes.stream()
+                .filter(v -> v.getCandidate() != null && v.getCandidate().getId() != null)
                 .collect(java.util.stream.Collectors.groupingBy(
-                        Vote::getCandidate,
+                        v -> v.getCandidate().getId(),
                         java.util.stream.Collectors.counting()
-                ))
-                .entrySet().stream()
-                .map(entry -> new ResultRow(
-                        entry.getKey().getId(),
-                        entry.getKey().getName(),
-                        entry.getKey().getParty().getName(),
-                        entry.getValue()
+                ));
+
+        // Fetch all candidates registered for this election so even candidates with 0 votes appear
+        List<Candidate> candidates = candidateRepository.findByElectionId(electionId);
+        
+        return candidates.stream()
+                .map(candidate -> new ResultRow(
+                        candidate.getId(),
+                        candidate.getName(),
+                        candidate.getParty() != null ? candidate.getParty().getName() : "Independent",
+                        voteCounts.getOrDefault(candidate.getId(), 0L)
                 ))
                 .sorted(java.util.Comparator.comparingLong(ResultRow::voteCount).reversed()
                         .thenComparing(ResultRow::candidateName))
@@ -137,14 +144,17 @@ public class ElectionService {
         for (Election election : electionRepository.findAll()) {
             List<ResultRow> results = getResults(election.getId());
             if (!results.isEmpty()) {
-                ResultRow winner = results.get(0);
-                resultCards.add(new DashboardResponse.ResultCard(
-                        election.getId(),
-                        election.getName(),
-                        winner.candidateName(),
-                        winner.partyName(),
-                        winner.voteCount()
-                ));
+                ResultRow top = results.get(0);
+                if (top.voteCount() > 0) {
+                    boolean isTie = results.size() > 1 && results.get(1).voteCount() == top.voteCount();
+                    resultCards.add(new DashboardResponse.ResultCard(
+                            election.getId(),
+                            election.getName(),
+                            isTie ? top.candidateName() + " (Tied with " + results.get(1).candidateName() + ")" : top.candidateName(),
+                            isTie ? "Tied" : top.partyName(),
+                            top.voteCount()
+                    ));
+                }
             }
         }
 

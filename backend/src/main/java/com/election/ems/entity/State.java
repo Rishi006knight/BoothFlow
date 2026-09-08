@@ -54,4 +54,18 @@ public class State {
     public void setElectoralVotes(Integer electoralVotes) {
         this.electoralVotes = electoralVotes;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        State state = (State) o;
+        return java.util.Objects.equals(id, state.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+

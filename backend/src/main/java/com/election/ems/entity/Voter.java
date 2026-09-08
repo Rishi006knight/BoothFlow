@@ -91,4 +91,18 @@ public class Voter {
     public void setConstituency(Constituency constituency) {
         this.constituency = constituency;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Voter voter = (Voter) o;
+        return java.util.Objects.equals(id, voter.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(id);
+    }
 }
+
