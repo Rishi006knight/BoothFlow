@@ -115,14 +115,12 @@ export default function Vote() {
           <h3 className="vote-section-title"><VoteIcon className="section-icon" />Select Election</h3>
           <select value={selectedElection} onChange={(e) => handleElectionChange(Number(e.target.value))} className="vote-select">
             {elections.map((election) => {
-              const label = election.name.toLowerCase().includes(election.constituency?.name?.toLowerCase() || "")
-                ? election.name
-                : election.constituency?.name
-                ? `${election.name} (${election.constituency.name})`
+              const label = election.constituency?.name
+                ? `${election.name} — ${election.constituency.name}`
                 : election.name;
               return (
                 <option key={election.id} value={election.id}>
-                  {label} - {new Date(election.electionDate).toLocaleDateString()}
+                  {label}
                 </option>
               );
             })}

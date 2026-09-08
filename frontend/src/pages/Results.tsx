@@ -55,9 +55,9 @@ export default function Results() {
           <Filter className="filter-icon" />
           <select value={selectedElection} onChange={(e) => handleElectionChange(Number(e.target.value))}>
             {elections.map((election) => {
-              const label = election.name.toLowerCase().includes(election.constituency?.name?.toLowerCase() || "")
-                ? election.name
-                : `${election.name} - ${election.constituency?.name || ""}`;
+              const label = election.constituency?.name
+                ? `${election.name} — ${election.constituency.name}`
+                : election.name;
               return (
                 <option key={election.id} value={election.id}>
                   {label}

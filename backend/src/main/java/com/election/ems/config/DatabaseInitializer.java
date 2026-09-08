@@ -148,9 +148,10 @@ public class DatabaseInitializer implements CommandLineRunner {
         Party trs = createParty("TRS", "Telangana Rashtra Samithi", "Car");
         Party jds = createParty("JD-S", "Janata Dal (Secular)", "Female Farmer");
 
-        // Elections (Clean names without cities - 1 per State)
-        // TN
+        // Elections (Clean names without cities)
+        // TN Chennai Central & Chennai South
         Election tnEl1 = createElection("TN-ASM-2026-001", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn1);
+        Election tnEl2 = createElection("TN-ASM-2026-002", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn2);
         // KL
         Election klEl1 = createElection("KL-ASM-2026-001", "Kerala Assembly Election 2026", "Assembly", LocalDate.of(2026, 4, 20), kl1);
         // KA
@@ -160,15 +161,17 @@ public class DatabaseInitializer implements CommandLineRunner {
         // TS
         Election tsEl1 = createElection("TS-ASM-2026-001", "Telangana Assembly Election 2026", "Assembly", LocalDate.of(2026, 2, 10), ts1);
 
-        // Candidates - All TN candidates belong to the Tamil Nadu Assembly Election 2026
+        // Candidates - Chennai Central (tnEl1)
         Candidate can1 = createCandidate("CAN-DMK-001", "M.K. Stalin", 71, "B.A.", dmk, tnEl1);
         Candidate can2 = createCandidate("CAN-AIADMK-001", "Edappadi K. Palaniswami", 70, "B.Sc.", aiadmk, tnEl1);
         Candidate can3 = createCandidate("CAN-BJP-001", "K. Annamalai", 40, "MBA, IIM", bjp, tnEl1);
         Candidate can4 = createCandidate("CAN-INC-001", "K.S. Alagiri", 65, "M.A.", inc, tnEl1);
-        Candidate can5 = createCandidate("CAN-DMK-002", "Udhayanidhi Stalin", 42, "B.Com", dmk, tnEl1);
-        Candidate can6 = createCandidate("CAN-AIADMK-002", "O. Panneerselvam", 68, "B.A.", aiadmk, tnEl1);
-        Candidate can7 = createCandidate("CAN-BJP-002", "Nainar Nagendran", 62, "B.L.", bjp, tnEl1);
-        Candidate can8 = createCandidate("CAN-PMK-001", "Anbumani Ramadoss", 56, "MBBS, MD", pmk, tnEl1);
+
+        // Candidates - Chennai South (tnEl2)
+        Candidate can5 = createCandidate("CAN-DMK-002", "Udhayanidhi Stalin", 42, "B.Com", dmk, tnEl2);
+        Candidate can6 = createCandidate("CAN-AIADMK-002", "O. Panneerselvam", 68, "B.A.", aiadmk, tnEl2);
+        Candidate can7 = createCandidate("CAN-BJP-002", "Nainar Nagendran", 62, "B.L.", bjp, tnEl2);
+        Candidate can8 = createCandidate("CAN-PMK-001", "Anbumani Ramadoss", 56, "MBBS, MD", pmk, tnEl2);
 
         // Seed Voters
         Voter voter1 = createVoter("VOT-TN-001", "Rajesh Kumar", LocalDate.of(1985, 4, 12), "Male", "9876543210", "12, G.N. Chetty Road, T.Nagar, Chennai", tn1);
@@ -260,34 +263,64 @@ public class DatabaseInitializer implements CommandLineRunner {
 
     private void fixDuplicateElectionsAndNames() {
         try {
-            Election primaryTn = null;
-            for (Election e : electionRepository.findAll()) {
-                if ("TN-ASM-2026-001".equals(e.getElectionCode())) {
-                    primaryTn = e;
-                    break;
-                }
-            }
-
+            // 1. Ensure election names do NOT include city or constituency names
             for (Election election : electionRepository.findAll()) {
-                // Ensure election names do NOT include city or constituency names
                 if (election.getName() != null && election.getName().contains(" - ")) {
                     election.setName(election.getName().split(" - ")[0].trim());
                     electionRepository.save(election);
                 }
+            }
 
-                // Remove duplicate TN elections (TN-ASM-2026-002 through 005)
-                if (primaryTn != null && !"TN-ASM-2026-001".equals(election.getElectionCode())
-                        && election.getElectionCode() != null
-                        && election.getElectionCode().startsWith("TN-ASM-2026-00")) {
-                    for (Candidate c : candidateRepository.findByElectionId(election.getId())) {
-                        c.setElection(primaryTn);
+            // 2. Remove empty duplicate elections that have no candidates and no votes (003, 004, 005)
+            for (Election election : electionRepository.findAll()) {
+                if ("TN-ASM-2026-003".equals(election.getElectionCode())
+                        || "TN-ASM-2026-004".equals(election.getElectionCode())
+                        || "TN-ASM-2026-005".equals(election.getElectionCode())) {
+                    boolean hasCandidates = !candidateRepository.findByElectionId(election.getId()).isEmpty();
+                    boolean hasVotes = !voteRepository.findByElectionId(election.getId()).isEmpty();
+                    if (!hasCandidates && !hasVotes) {
+                        electionRepository.delete(election);
+                    }
+                }
+            }
+
+            // 3. Ensure Chennai South election (TN-ASM-2026-002) exists
+            Election tnEl2 = electionRepository.findAll().stream()
+                    .filter(e -> "TN-ASM-2026-002".equals(e.getElectionCode()))
+                    .findFirst()
+                    .orElse(null);
+            if (tnEl2 == null) {
+                Constituency tn2 = constituencyRepository.findAll().stream()
+                        .filter(c -> "TN-002".equals(c.getConstituencyCode()))
+                        .findFirst()
+                        .orElse(null);
+                if (tn2 != null) {
+                    tnEl2 = createElection("TN-ASM-2026-002", "Tamil Nadu Assembly Election 2026", "Assembly", LocalDate.of(2026, 5, 6), tn2);
+                }
+            }
+
+            if (tnEl2 != null) {
+                // Ensure Chennai South candidates are linked to tnEl2
+                for (Candidate c : candidateRepository.findAll()) {
+                    if (c.getCandidateCode() != null && (
+                            c.getCandidateCode().equals("CAN-DMK-002") ||
+                            c.getCandidateCode().equals("CAN-AIADMK-002") ||
+                            c.getCandidateCode().equals("CAN-BJP-002") ||
+                            c.getCandidateCode().equals("CAN-PMK-001")
+                    )) {
+                        c.setElection(tnEl2);
                         candidateRepository.save(c);
                     }
-                    for (Vote v : voteRepository.findByElectionId(election.getId())) {
-                        v.setElection(primaryTn);
-                        voteRepository.save(v);
+                }
+                // Ensure votes for Chennai South candidates belong to tnEl2
+                for (Vote v : voteRepository.findAll()) {
+                    if (v.getCandidate() != null && v.getCandidate().getId() != null) {
+                        Long cId = v.getCandidate().getId();
+                        if (cId == 5 || cId == 6 || cId == 7 || cId == 8) {
+                            v.setElection(tnEl2);
+                            voteRepository.save(v);
+                        }
                     }
-                    electionRepository.delete(election);
                 }
             }
         } catch (Exception e) {

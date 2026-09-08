@@ -50,7 +50,7 @@ export default function Candidates() {
             <option value="all">All Elections</option>
             {elections.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.name}
+                {e.constituency?.name ? `${e.name} — ${e.constituency.name}` : e.name}
               </option>
             ))}
           </select>
