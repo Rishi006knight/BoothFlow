@@ -11,7 +11,6 @@ export default function UserLogin({ onLogin }: UserLoginProps) {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [voterCode, setVoterCode] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     api.getVoters()

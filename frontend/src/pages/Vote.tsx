@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Candidate, Election, PollingStation, Voter } from "../types";
-import { CheckCircle, Vote as VoteIcon, User, MapPin, AlertTriangle, RefreshCw } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import UserLogin from "../components/UserLogin";
 import { useApi, ErrorBlock } from "../useApi";
 

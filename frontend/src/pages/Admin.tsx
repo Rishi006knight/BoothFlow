@@ -7,7 +7,6 @@ import type {
   Election,
   Party,
   PollingStation,
-  ResultRow,
   Voter
 } from "../types";
 import { Settings, Database, Users, Vote as VoteIcon, Building2, Calendar, UserPlus } from "lucide-react";

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
 import type { Dashboard, ResultRow, Election } from "../types";
-import { Users, Vote as VoteIcon, Calendar, TrendingUp, Trophy, ArrowRight, RefreshCw } from "lucide-react";
+import { Users, Vote as VoteIcon, Calendar, TrendingUp, Trophy, ArrowRight } from "lucide-react";
 import { useApi, ErrorBlock } from "../useApi";
 
 export default function Home() {
