@@ -250,10 +250,13 @@ public class ElectionService {
             throw new IllegalArgumentException("Candidate does not belong to the selected election.");
         }
         if (!voter.getConstituency().getId().equals(election.getConstituency().getId())) {
-            throw new IllegalArgumentException("Voter is not registered in this election's constituency.");
+            throw new IllegalArgumentException("Voter is registered in " + voter.getConstituency().getName()
+                    + ", but the selected election is for " + election.getConstituency().getName() + ".");
         }
         if (!pollingStation.getConstituency().getId().equals(election.getConstituency().getId())) {
-            throw new IllegalArgumentException("Polling station does not belong to this election's constituency.");
+            throw new IllegalArgumentException("Anomaly prevented: Polling station '" + pollingStation.getName()
+                    + "' is in " + pollingStation.getConstituency().getName()
+                    + ", but the selected election is for " + election.getConstituency().getName() + ".");
         }
 
         Vote vote = new Vote();

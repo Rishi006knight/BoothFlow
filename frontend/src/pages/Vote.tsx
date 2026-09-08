@@ -34,9 +34,14 @@ export default function Vote() {
 
   const handleElectionChange = async (electionId: number) => {
     setSelectedElection(electionId);
+    setSelectedCandidate(0);
+    setSelectedPollingStation(0);
     try {
-      const c = await api.getCandidates(electionId) as Candidate[];
+      const c = (await api.getCandidates(electionId)) as Candidate[];
       setCandidates(c);
+      if (c.length > 0) {
+        setSelectedCandidate(c[0].id);
+      }
     } catch (error) {
       console.error("Failed to load candidates", error);
     }
@@ -68,6 +73,14 @@ export default function Vote() {
 
   const elections = electionsApi.data || [];
   const pollingStations = pollingApi.data || [];
+  const currentElection = elections.find((e) => e.id === selectedElection);
+  const filteredPollingStations = pollingStations.filter((station) => {
+    if (!currentElection) return true;
+    if (currentElection.constituency?.id) {
+      return station.constituency?.id === currentElection.constituency.id;
+    }
+    return true;
+  });
 
   if (hasVoted) {
     return (
@@ -135,12 +148,24 @@ export default function Vote() {
 
         <div className="vote-section">
           <h3 className="vote-section-title"><MapPin className="section-icon" />Select Polling Station</h3>
+          {currentElection?.constituency && (
+            <p style={{ color: "#64748b", fontSize: "0.85rem", marginTop: "-0.5rem", marginBottom: "0.75rem" }}>
+              Showing polling stations for <strong>{currentElection.constituency.name}</strong>
+            </p>
+          )}
           <select value={selectedPollingStation} onChange={(e) => setSelectedPollingStation(Number(e.target.value))} className="vote-select">
             <option value="">Select a polling station</option>
-            {pollingStations.map((station) => (
-              <option key={station.id} value={station.id}>{station.name} - {station.location}</option>
+            {filteredPollingStations.map((station) => (
+              <option key={station.id} value={station.id}>
+                {station.name} - {station.location}
+              </option>
             ))}
           </select>
+          {filteredPollingStations.length === 0 && (
+            <p style={{ color: "#e74c3c", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+              No polling stations registered for this constituency.
+            </p>
+          )}
         </div>
 
         {message && <div className={`vote-message ${message.includes("success") ? "success" : "error"}`}>{message}</div>}
